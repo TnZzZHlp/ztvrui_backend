@@ -4,7 +4,7 @@ use salvo::{ handler, Request, Response };
 static PROJECT_DIR: Dir = include_dir!("./dist");
 
 #[handler]
-pub async fn index(res: &mut Response, req: Request) {}
+pub async fn index(res: &mut Response, req: &mut Request) {}
 
 fn get_file(file: String) -> Result<Vec<u8>, std::io::Error> {
     match PROJECT_DIR.get_file(file) {
