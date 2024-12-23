@@ -5,7 +5,7 @@ use crate::zerotier::ZeroTier;
 
 #[derive(Serialize, Deserialize)]
 pub struct AppConfig {
-    database_url: String,
+    pub database_path: String,
     pub listen: String,
     pub zerotier: ZeroTier,
 }
@@ -21,7 +21,7 @@ impl AppConfig {
 impl Default for AppConfig {
     fn default() -> Self {
         AppConfig {
-            database_url: "".to_string(),
+            database_path: "".to_string(),
             listen: "".to_string(),
             zerotier: ZeroTier {
                 auth_token: "".to_string(),
@@ -40,7 +40,7 @@ mod tests {
         let file = std::fs::File::create("test.json").unwrap();
 
         let config = AppConfig {
-            database_url: "sqlite://test.db".to_string(),
+            database_path: "sqlite://test.db".to_string(),
             listen: "127.0.0.1:5800".to_string(),
             zerotier: ZeroTier {
                 auth_token: "test_token".to_string(),
@@ -52,12 +52,12 @@ mod tests {
 
         let config = AppConfig::init("test.json");
 
-        assert_eq!(config.database_url, "sqlite://test.db");
+        assert_eq!(config.database_path, "sqlite://test.db");
         assert_eq!(config.listen, "127.0.0.1:5800");
         assert_eq!(config.zerotier.auth_token, "test_token");
         assert_eq!(config.zerotier.address, "12312");
 
-        assert_ne!(config.database_url, "sqlite://test.db2");
+        assert_ne!(config.database_path, "sqlite://test.db2");
         assert_ne!(config.listen, "6351156");
         assert_ne!(config.zerotier.auth_token, "test_token2");
         assert_ne!(config.zerotier.address, "123122");

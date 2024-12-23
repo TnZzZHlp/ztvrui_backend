@@ -5,14 +5,17 @@ name = "backend"
 version = "0.1.0"
 
 [dependencies]
+bcrypt = "0.16"
 clap = {version = "4.5.23", features = ["derive"]}
 include_dir = "0.7.4"
 lazy_static = "1.5.0"
+mime_guess = "2.0.5"
 reqwest = {version = "0.12.8", features = ["json", "rustls-tls"], default-features = false}
-salvo = {version = "0.74.3"}
+salvo = {version = "0.74.3", features = ["logging"]}
 serde = {version = "1.0.216", features = ["derive"]}
 serde_json = "1.0.133"
 sqlx = {version = "0.8.2", features = ["runtime-tokio", "sqlite"]}
 tokio = {version = "1.42.0", features = ["full"]}
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
+uuid = {version = "1.11.0", features = ["v4"]}

@@ -1,19 +1,22 @@
 mod config;
 mod zerotier;
+mod database;
 
 mod statics;
+
 use statics::index;
 
 mod api;
 use api::*;
 
 use salvo::prelude::*;
-
+use salvo::logging::Logger;
 use clap::Parser;
 
 lazy_static::lazy_static! {
     static ref CONFIG: config::AppConfig = config::AppConfig::init(Args::parse().config);
     static ref ZEROTIER: zerotier::ZeroTier = zerotier::ZeroTier::new(&CONFIG);
+    static ref DB: database::Database = database::Database::new(&CONFIG);
 }
 
 #[derive(Parser)]
@@ -26,13 +29,15 @@ struct Args {
 async fn main() {
     tracing_subscriber::fmt().init();
 
+    DB.init().await;
+
     let router = Router::new()
         .push(Router::with_path("api").push(Router::with_path("login").post(login)))
         .push(Router::with_path("ztapi/<**>").goal(forward_to_zt))
         .push(Router::with_path("<**>").get(index));
-
+    let service = Service::new(router).hoop(Logger::new());
     let acceptor = TcpListener::new(CONFIG.listen.clone()).bind().await;
-    Server::new(acceptor).serve(router).await;
+    Server::new(acceptor).serve(service).await;
 }
 
 #[handler]
