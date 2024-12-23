@@ -1,4 +1,5 @@
 use reqwest::{ Method, Response };
+use salvo::http::body;
 use serde::{ Serialize, Deserialize };
 
 use crate::config::AppConfig;
@@ -21,7 +22,8 @@ impl ZeroTier {
     pub async fn forward(
         &self,
         endpoint: &str,
-        method: Method
+        method: Method,
+        body: Option<serde_json::Value>
     ) -> Result<Response, reqwest::Error> {
         let url = format!("{}/{}", self.address, endpoint);
 
@@ -29,6 +31,7 @@ impl ZeroTier {
             ::new()
             .request(method, &url)
             .header("X-ZT1-AUTH", self.auth_token.clone())
+            .json(&body)
             .send().await
     }
 }

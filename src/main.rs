@@ -39,7 +39,12 @@ async fn main() {
 async fn forward_to_zt(req: &mut Request, res: &mut Response) {
     let path = req.uri().path().replace("/ztapi/", "");
 
-    let response = ZEROTIER.forward(&path, req.method().clone()).await;
+    let body = match req.parse_json::<serde_json::Value>().await {
+        Ok(body) => Some(body),
+        Err(_) => None,
+    };
+
+    let response = ZEROTIER.forward(&path, req.method().clone(), body).await;
 
     match response {
         Ok(response) => {
