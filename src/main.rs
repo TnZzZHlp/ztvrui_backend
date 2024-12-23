@@ -28,7 +28,7 @@ async fn main() {
 
     let router = Router::new()
         .push(Router::with_path("api").push(Router::with_path("login").post(login)))
-        .push(Router::with_path("ztapi/<**>").hoop(auth).goal(forward_to_zt))
+        .push(Router::with_path("ztapi/<**>").goal(forward_to_zt))
         .push(Router::with_path("<**>").get(index));
 
     let acceptor = TcpListener::new(CONFIG.listen.clone()).bind().await;
