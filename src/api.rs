@@ -12,12 +12,6 @@ pub async fn login(res: &mut Response) {
     todo!("Implement login")
 }
 
-/// Register API
-#[handler]
-pub async fn register(res: &mut Response) {
-    todo!("Implement register")
-}
-
 /// Logout API
 #[handler]
 pub async fn logout(res: &mut Response) {

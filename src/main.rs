@@ -37,25 +37,28 @@ async fn main() {
 
 #[handler]
 async fn forward_to_zt(req: &mut Request, res: &mut Response) {
-    let path = req.uri().path().replace("/ztapi/", "");
+    let result = (async {
+        let path = req.uri().path().replace("/ztapi/", "");
+        let body = req.parse_json::<serde_json::Value>().await.ok();
 
-    let body = match req.parse_json::<serde_json::Value>().await {
-        Ok(body) => Some(body),
-        Err(_) => None,
-    };
+        let zt_response = ZEROTIER.forward(&path, req.method().clone(), body).await.map_err(|e|
+            StatusError::bad_request().brief(e.to_string())
+        )?;
 
-    let response = ZEROTIER.forward(&path, req.method().clone(), body).await;
+        let zt_status = zt_response.status();
 
-    match response {
-        Ok(response) => {
-            let status = response.status();
-            let body = response.json::<serde_json::Value>().await.unwrap();
+        let response_body = zt_response
+            .json::<serde_json::Value>().await
+            .map_err(|_| StatusError::internal_server_error().brief("Failed to parse response"))?;
 
+        Ok::<_, StatusError>((zt_status, response_body))
+    }).await;
+
+    match result {
+        Ok((status, body)) => {
             res.status_code(status);
             res.render(Json(body));
         }
-        Err(e) => {
-            res.render(StatusError::bad_request().brief(e.to_string()));
-        }
+        Err(err) => res.render(err),
     }
 }
