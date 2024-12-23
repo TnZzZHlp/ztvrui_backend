@@ -44,7 +44,7 @@ async fn forward_to_zt(req: &mut Request, res: &mut Response) {
     match response {
         Ok(response) => {
             let status = response.status();
-            let body = response.text().await.unwrap();
+            let body = response.json::<serde_json::Value>().await.unwrap();
 
             res.status_code(status);
             res.render(Json(body));
