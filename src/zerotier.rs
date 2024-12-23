@@ -3,7 +3,7 @@ use serde::{ Serialize, Deserialize };
 
 use crate::config::AppConfig;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct ZeroTier {
     pub auth_token: String,
     pub address: String,
