@@ -2028,10 +2028,22 @@ version = "0.74.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf71b51a4d651ddf3d660db7ae483baab3f1bd81f1f82f177731bf43f6052c34"
 dependencies = [
+ "salvo-cors",
  "salvo-jwt-auth",
  "salvo-proxy",
  "salvo_core",
  "salvo_extra",
+]
+
+[[package]]
+name = "salvo-cors"
+version = "0.74.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5751058f858759ef8b29b669ca9a67aa8a9800eb1be43a286ab293a00121d5ec"
+dependencies = [
+ "bytes",
+ "salvo_core",
+ "tracing",
 ]
 
 [[package]]

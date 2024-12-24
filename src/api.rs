@@ -6,18 +6,30 @@ use crate::DB;
 /// Verify Cookie legitimacy
 #[handler]
 pub async fn auth(req: &mut Request, res: &mut Response, ctrl: &mut FlowCtrl) {
+    let refuse = |res: &mut Response, ctrl: &mut FlowCtrl| {
+        res.status_code(StatusCode::UNAUTHORIZED);
+        res.render(
+            Json(
+                json!({
+                "path": "/",
+                "error": "No cookie found"
+            })
+            )
+        );
+        ctrl.skip_rest();
+    };
+
     let cookie = match req.cookie("Token") {
         Some(cookie) => cookie.value(),
         None => {
-            res.status_code(StatusCode::UNAUTHORIZED);
-            ctrl.skip_rest();
+            refuse(res, ctrl);
             return;
         }
     };
 
     if !DB.verify_cookie(cookie).await {
-        res.status_code(StatusCode::UNAUTHORIZED);
-        ctrl.skip_rest();
+        refuse(res, ctrl);
+        return;
     }
 }
 
@@ -26,11 +38,16 @@ pub async fn auth(req: &mut Request, res: &mut Response, ctrl: &mut FlowCtrl) {
 pub async fn login(res: &mut Response, req: &mut Request, ctrl: &mut FlowCtrl) {
     let body = req.parse_json::<serde_json::Value>().await.unwrap();
 
+    res.add_header("access-control-expose-headers", "Set-Cookie", true).unwrap();
+
     let (username, password) = match (body.get("username"), body.get("password")) {
         (Some(username), Some(password)) =>
             (username.as_str().unwrap(), password.as_str().unwrap()),
         _ => {
             res.status_code(StatusCode::BAD_REQUEST);
+            res.render(Json(json!({
+                "error": "Invalid request"
+            })));
             ctrl.skip_rest();
             return;
         }
@@ -43,7 +60,7 @@ pub async fn login(res: &mut Response, req: &mut Request, ctrl: &mut FlowCtrl) {
 
         res.add_header(
             "Set-Cookie",
-            Cookie::build(("Token", cookie)).build().to_string(),
+            Cookie::build(("Token", cookie)).path("/").permanent().build().to_string(),
             true
         ).unwrap();
 
@@ -62,4 +79,12 @@ pub async fn login(res: &mut Response, req: &mut Request, ctrl: &mut FlowCtrl) {
 #[handler]
 pub async fn logout(res: &mut Response) {
     todo!("Implement logout")
+}
+
+/// Check Login Status
+#[handler]
+pub async fn check(res: &mut Response, _req: &mut Request) {
+    res.render(Json(json!({
+        "error": "0"
+    })));
 }
