@@ -36,6 +36,7 @@ async fn main() {
         .push(
             Router::with_path("api")
                 .push(Router::with_path("login").post(login))
+                .push(Router::with_path("logout").hoop(auth).get(logout))
                 .push(Router::with_path("check").hoop(auth).get(check))
         )
         .push(Router::with_path("ztapi/<**>").hoop(auth).goal(forward_to_zt))

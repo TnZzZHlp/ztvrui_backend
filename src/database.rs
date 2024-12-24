@@ -1,5 +1,4 @@
 use std::fs::File;
-use clap::builder::Str;
 use sqlx::{ query, Pool, Sqlite, Row };
 use bcrypt::{ DEFAULT_COST, hash, verify };
 
@@ -95,6 +94,14 @@ impl Database {
         } else {
             false
         }
+    }
+
+    pub async fn remove_cookie(&self, cookie: &str) -> Result<(), sqlx::Error> {
+        query(r#"UPDATE USERS SET COOKIE = NULL WHERE COOKIE = $1"#)
+            .bind(cookie)
+            .execute(&self.conn).await?;
+
+        Ok(())
     }
 
     pub async fn update_user_info(

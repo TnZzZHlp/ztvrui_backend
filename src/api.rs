@@ -38,8 +38,6 @@ pub async fn auth(req: &mut Request, res: &mut Response, ctrl: &mut FlowCtrl) {
 pub async fn login(res: &mut Response, req: &mut Request, ctrl: &mut FlowCtrl) {
     let body = req.parse_json::<serde_json::Value>().await.unwrap();
 
-    res.add_header("access-control-expose-headers", "Set-Cookie", true).unwrap();
-
     let (username, password) = match (body.get("username"), body.get("password")) {
         (Some(username), Some(password)) =>
             (username.as_str().unwrap(), password.as_str().unwrap()),
@@ -77,8 +75,14 @@ pub async fn login(res: &mut Response, req: &mut Request, ctrl: &mut FlowCtrl) {
 
 /// Logout API
 #[handler]
-pub async fn logout(res: &mut Response) {
-    todo!("Implement logout")
+pub async fn logout(req: &mut Request, res: &mut Response) {
+    let cookie = req.cookie("Token").unwrap().value();
+
+    DB.remove_cookie(cookie).await.unwrap();
+
+    res.render(Json(json!({
+        "error": "0"
+    })));
 }
 
 /// Check Login Status
