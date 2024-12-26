@@ -1,5 +1,3 @@
-use std::path;
-
 use include_dir::{ include_dir, Dir };
 use salvo::prelude::*;
 
