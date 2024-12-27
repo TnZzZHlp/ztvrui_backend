@@ -1,6 +1,7 @@
 use reqwest::{ Method, Response };
 use salvo::http::body;
 use serde::{ Serialize, Deserialize };
+use tokio::time::sleep;
 
 use crate::config::AppConfig;
 
@@ -31,6 +32,7 @@ impl ZeroTier {
             ::new()
             .request(method, &url)
             .header("X-ZT1-AUTH", self.auth_token.clone())
+            .header("Content-Type", "application/json")
             .json(&body)
             .send().await
     }

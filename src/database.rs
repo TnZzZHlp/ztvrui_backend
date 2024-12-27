@@ -48,7 +48,7 @@ impl Database {
         INSERT INTO USERS (USERNAME, PASSWORD)
         SELECT ?, ?
         WHERE NOT EXISTS (
-            SELECT 1 FROM USERS WHERE USERNAME = ?
+            SELECT 1 FROM USERS
         )
         "#
         )
