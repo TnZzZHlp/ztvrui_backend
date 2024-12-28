@@ -68,7 +68,7 @@ pub async fn login(res: &mut Response, req: &mut Request, ctrl: &mut FlowCtrl) {
     } else {
         res.status_code(StatusCode::UNAUTHORIZED);
         res.render(Json(json!({
-            "error": "Invalid username or password"
+            "error": "invalid_username_or_password"
         })));
     }
 }
@@ -83,6 +83,41 @@ pub async fn logout(req: &mut Request, res: &mut Response) {
     res.render(Json(json!({
         "error": "0"
     })));
+}
+
+/// Modify Username Or Password API
+#[handler]
+pub async fn modify(res: &mut Response, req: &mut Request) {
+    let body = req.parse_json::<serde_json::Value>().await.unwrap();
+
+    let (username, password) = match (body.get("username"), body.get("password")) {
+        (Some(username), Some(password)) =>
+            (username.as_str().unwrap(), password.as_str().unwrap()),
+        _ => {
+            res.status_code(StatusCode::BAD_REQUEST);
+            res.render(Json(json!({
+                "error": "Invalid request"
+            })));
+            return;
+        }
+    };
+
+    let cookie = req.cookie("Token").unwrap().value();
+
+    match DB.update_user_info(cookie, username, password).await {
+        Ok(_) => {
+            res.render(Json(json!({
+            "error": "0"
+        })));
+        }
+        Err(e) => {
+            res.status_code(StatusCode::INTERNAL_SERVER_ERROR);
+            res.render(Json(json!({
+                "error": e.to_string()
+            })));
+            return;
+        }
+    }
 }
 
 /// Check Login Status

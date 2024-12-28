@@ -106,12 +106,18 @@ impl Database {
 
     pub async fn update_user_info(
         &self,
+        cookie: &str,
         username: &str,
         password: &str
     ) -> Result<(), sqlx::Error> {
-        query(r#"UPDATE USERS SET PASSWORD = $1 WHERE USERNAME = $2"#)
+        query(r#"UPDATE USERS SET PASSWORD = $1 WHERE COOKIE = $2"#)
             .bind(hash(password, DEFAULT_COST).unwrap())
+            .bind(cookie)
+            .execute(&self.conn).await?;
+
+        query(r#"UPDATE USERS SET USERNAME = $1 WHERE COOKIE = $2"#)
             .bind(username)
+            .bind(cookie)
             .execute(&self.conn).await?;
 
         Ok(())

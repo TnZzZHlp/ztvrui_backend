@@ -1,7 +1,5 @@
 use reqwest::{ Method, Response };
-use salvo::http::body;
 use serde::{ Serialize, Deserialize };
-use tokio::time::sleep;
 
 use crate::config::AppConfig;
 
