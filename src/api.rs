@@ -1,7 +1,7 @@
 use salvo::{ http::cookie::Cookie, prelude::* };
 use serde_json::json;
 
-use crate::DB;
+use crate::CONFIG;
 
 /// Verify Cookie legitimacy
 #[handler]
@@ -27,7 +27,7 @@ pub async fn auth(req: &mut Request, res: &mut Response, ctrl: &mut FlowCtrl) {
         }
     };
 
-    if !DB.verify_cookie(cookie).await {
+    if !CONFIG.read().await.verify_cookie(cookie).await {
         refuse(res, ctrl);
         return;
     }
@@ -51,10 +51,10 @@ pub async fn login(res: &mut Response, req: &mut Request, ctrl: &mut FlowCtrl) {
         }
     };
 
-    if DB.verify(username, password).await {
+    if CONFIG.read().await.verify(username, password).await {
         let cookie = uuid::Uuid::new_v4().to_string();
 
-        DB.update_user_cookie(username, &cookie).await.unwrap();
+        CONFIG.write().await.update_cookie(&cookie).await;
 
         res.add_header(
             "Set-Cookie",
@@ -75,10 +75,8 @@ pub async fn login(res: &mut Response, req: &mut Request, ctrl: &mut FlowCtrl) {
 
 /// Logout API
 #[handler]
-pub async fn logout(req: &mut Request, res: &mut Response) {
-    let cookie = req.cookie("Token").unwrap().value();
-
-    DB.remove_cookie(cookie).await.unwrap();
+pub async fn logout(_req: &mut Request, res: &mut Response) {
+    CONFIG.write().await.remove_cookie().await;
 
     res.render(Json(json!({
         "error": "0"
@@ -102,22 +100,13 @@ pub async fn modify(res: &mut Response, req: &mut Request) {
         }
     };
 
-    let cookie = req.cookie("Token").unwrap().value();
+    {
+        CONFIG.write().await.update_user_info(username, password).await;
+    }
 
-    match DB.update_user_info(cookie, username, password).await {
-        Ok(_) => {
-            res.render(Json(json!({
+    res.render(Json(json!({
             "error": "0"
         })));
-        }
-        Err(e) => {
-            res.status_code(StatusCode::INTERNAL_SERVER_ERROR);
-            res.render(Json(json!({
-                "error": e.to_string()
-            })));
-            return;
-        }
-    }
 }
 
 /// Check Login Status

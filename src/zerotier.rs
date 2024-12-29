@@ -1,8 +1,6 @@
 use reqwest::{ Method, Response };
 use serde::{ Serialize, Deserialize };
 
-use crate::config::AppConfig;
-
 #[derive(Serialize, Deserialize, Default)]
 pub struct ZeroTier {
     pub auth_token: String,
@@ -10,11 +8,16 @@ pub struct ZeroTier {
 }
 
 impl ZeroTier {
-    pub fn new(config: &AppConfig) -> Self {
+    pub fn new() -> Self {
         ZeroTier {
-            auth_token: config.zerotier.auth_token.clone(),
-            address: config.zerotier.address.clone(),
+            auth_token: "".to_string(),
+            address: "".to_string(),
         }
+    }
+
+    pub fn init(&mut self, zerotier: &ZeroTier) {
+        self.auth_token = zerotier.auth_token.clone();
+        self.address = zerotier.address.clone();
     }
 
     // Forward a request to the ZeroTier API

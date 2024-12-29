@@ -1,6 +1,5 @@
 mod config;
 mod zerotier;
-mod database;
 
 mod statics;
 
@@ -12,11 +11,13 @@ use api::*;
 use salvo::prelude::*;
 use salvo::logging::Logger;
 use clap::Parser;
+use tokio::sync::RwLock;
 
 lazy_static::lazy_static! {
-    static ref CONFIG: config::AppConfig = config::AppConfig::init(Args::parse().config);
-    static ref ZEROTIER: zerotier::ZeroTier = zerotier::ZeroTier::new(&CONFIG);
-    static ref DB: database::Database = database::Database::new(&CONFIG);
+    static ref CONFIG: RwLock<config::AppConfig> = RwLock::new(
+        config::AppConfig::init(Args::parse().config)
+    );
+    static ref ZEROTIER: RwLock<zerotier::ZeroTier> = RwLock::new(zerotier::ZeroTier::new());
 }
 
 #[derive(Parser)]
@@ -29,7 +30,17 @@ struct Args {
 async fn main() {
     tracing_subscriber::fmt().init();
 
-    DB.init().await;
+    let config = CONFIG.read().await;
+
+    // Initialize ZeroTier
+    {
+        let mut zerotier = ZEROTIER.write().await;
+        zerotier.init(&config.zerotier);
+        drop(zerotier);
+    }
+
+    let listen = config.listen.clone();
+    drop(config);
 
     let router = Router::new()
         .push(
@@ -42,7 +53,7 @@ async fn main() {
         .push(Router::with_path("ztapi/<**>").hoop(auth).goal(forward_to_zt))
         .push(Router::with_path("<**>").get(index));
     let service = Service::new(router).hoop(Logger::new());
-    let acceptor = TcpListener::new(CONFIG.listen.clone()).bind().await;
+    let acceptor = TcpListener::new(listen).bind().await;
     Server::new(acceptor).serve(service).await;
 }
 
@@ -52,9 +63,9 @@ async fn forward_to_zt(req: &mut Request, res: &mut Response) {
         let path = req.uri().path().replace("/ztapi/", "");
         let body = req.parse_json::<serde_json::Value>().await.ok();
 
-        let zt_response = ZEROTIER.forward(&path, req.method().clone(), body).await.map_err(|e|
-            StatusError::bad_request().brief(e.to_string())
-        )?;
+        let zt_response = ZEROTIER.read().await
+            .forward(&path, req.method().clone(), body).await
+            .map_err(|e| StatusError::bad_request().brief(e.to_string()))?;
 
         let zt_status = zt_response.status();
 
