@@ -3,6 +3,7 @@ use serde::{ Serialize, Deserialize };
 use bcrypt::{ hash, verify };
 
 use crate::zerotier::ZeroTier;
+use crate::CONFIG_PATH;
 
 #[derive(Serialize, Deserialize)]
 pub struct AppConfig {
@@ -31,6 +32,10 @@ impl AppConfig {
 
     pub async fn update_cookie(&mut self, cookie: &str) {
         self.info.cookie = cookie.to_string();
+
+        let config = serde_json::to_string(&self).unwrap();
+
+        std::fs::write(CONFIG_PATH.clone(), config).unwrap();
     }
 
     pub async fn verify_cookie(&self, cookie: &str) -> bool {
@@ -39,11 +44,19 @@ impl AppConfig {
 
     pub async fn remove_cookie(&mut self) {
         self.info.cookie = "".to_string();
+
+        let config = serde_json::to_string(&self).unwrap();
+
+        std::fs::write(CONFIG_PATH.clone(), config).unwrap();
     }
 
     pub async fn update_user_info(&mut self, username: &str, password: &str) {
         self.info.username = username.to_string();
         self.info.password = hash(password, 8).unwrap();
+
+        let config = serde_json::to_string(&self).unwrap();
+
+        std::fs::write(CONFIG_PATH.clone(), config).unwrap();
     }
 }
 

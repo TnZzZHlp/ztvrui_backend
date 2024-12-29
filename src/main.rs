@@ -18,6 +18,7 @@ lazy_static::lazy_static! {
         config::AppConfig::init(Args::parse().config)
     );
     static ref ZEROTIER: RwLock<zerotier::ZeroTier> = RwLock::new(zerotier::ZeroTier::new());
+    static ref CONFIG_PATH: String = Args::parse().config;
 }
 
 #[derive(Parser)]

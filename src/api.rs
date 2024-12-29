@@ -54,17 +54,17 @@ pub async fn login(res: &mut Response, req: &mut Request, ctrl: &mut FlowCtrl) {
     if CONFIG.read().await.verify(username, password).await {
         let cookie = uuid::Uuid::new_v4().to_string();
 
-        CONFIG.write().await.update_cookie(&cookie).await;
-
         res.add_header(
             "Set-Cookie",
-            Cookie::build(("Token", cookie)).path("/").permanent().build().to_string(),
+            Cookie::build(("Token", &cookie)).path("/").permanent().build().to_string(),
             true
         ).unwrap();
 
         res.render(Json(json!({
             "error": "0"
         })));
+
+        CONFIG.write().await.update_cookie(&cookie).await;
     } else {
         res.status_code(StatusCode::UNAUTHORIZED);
         res.render(Json(json!({
