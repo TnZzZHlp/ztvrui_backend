@@ -1,5 +1,9 @@
-use salvo::{ http::cookie::{ self, Cookie }, prelude::* };
+use core::time;
+
+use salvo::{ http::cookie::Cookie, prelude::* };
 use serde_json::json;
+use base64::prelude::*;
+use std::time::{ SystemTime, UNIX_EPOCH };
 
 use crate::{ CONFIG, COOKIE };
 
@@ -20,13 +24,7 @@ pub async fn auth(req: &mut Request, res: &mut Response, ctrl: &mut FlowCtrl) {
     };
 
     let cookie = match req.cookie("Token") {
-        Some(cookie) => {
-            if cookie.value().is_empty() {
-                refuse(res, ctrl);
-                return;
-            }
-            cookie.value().to_string()
-        }
+        Some(cookie) => cookie.value(),
         None => {
             refuse(res, ctrl);
             return;
@@ -58,7 +56,13 @@ pub async fn login(res: &mut Response, req: &mut Request, ctrl: &mut FlowCtrl) {
     };
 
     if CONFIG.read().await.verify(username, password).await {
-        let cookie = uuid::Uuid::new_v4().to_string();
+        let cookie = BASE64_STANDARD.encode(
+            format!(
+                "{}:{}",
+                uuid::Uuid::new_v4(),
+                SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis()
+            ).as_bytes()
+        );
 
         res.add_header(
             "Set-Cookie",
