@@ -16,7 +16,6 @@ pub struct AppConfig {
 pub struct Info {
     pub username: String,
     pub password: String,
-    pub cookie: String,
 }
 
 impl AppConfig {
@@ -28,26 +27,6 @@ impl AppConfig {
 
     pub async fn verify(&self, username: &str, password: &str) -> bool {
         username == self.info.username && verify(password, &self.info.password).unwrap()
-    }
-
-    pub async fn update_cookie(&mut self, cookie: &str) {
-        self.info.cookie = cookie.to_string();
-
-        let config = serde_json::to_string(&self).unwrap();
-
-        std::fs::write(CONFIG_PATH.clone(), config).unwrap();
-    }
-
-    pub async fn verify_cookie(&self, cookie: &str) -> bool {
-        cookie == self.info.cookie
-    }
-
-    pub async fn remove_cookie(&mut self) {
-        self.info.cookie = "".to_string();
-
-        let config = serde_json::to_string(&self).unwrap();
-
-        std::fs::write(CONFIG_PATH.clone(), config).unwrap();
     }
 
     pub async fn update_user_info(&mut self, username: &str, password: &str) {
@@ -66,7 +45,6 @@ impl Default for AppConfig {
             info: Info {
                 username: "".to_string(),
                 password: "".to_string(),
-                cookie: "".to_string(),
             },
             listen: "".to_string(),
             zerotier: ZeroTier {
@@ -89,7 +67,6 @@ mod tests {
             info: Info {
                 username: "admin".to_string(),
                 password: "password".to_string(),
-                cookie: "".to_string(),
             },
             listen: "127.0.0.1:5800".to_string(),
             zerotier: ZeroTier {
@@ -104,14 +81,12 @@ mod tests {
 
         assert_eq!(config.info.username, "admin");
         assert_eq!(config.info.password, "password");
-        assert_eq!(config.info.cookie, "");
         assert_eq!(config.listen, "127.0.0.1:5800");
         assert_eq!(config.zerotier.auth_token, "test_token");
         assert_eq!(config.zerotier.address, "12312");
 
         assert_ne!(config.info.username, "admin2");
         assert_ne!(config.info.password, "password2");
-        assert_ne!(config.info.cookie, "test_cookie");
         assert_ne!(config.listen, "6351156");
         assert_ne!(config.zerotier.auth_token, "test_token2");
         assert_ne!(config.zerotier.address, "123122");

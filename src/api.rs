@@ -1,7 +1,7 @@
-use salvo::{ http::cookie::Cookie, prelude::* };
+use salvo::{ http::cookie::{ self, Cookie }, prelude::* };
 use serde_json::json;
 
-use crate::CONFIG;
+use crate::{ CONFIG, COOKIE };
 
 /// Verify Cookie legitimacy
 #[handler]
@@ -20,14 +20,20 @@ pub async fn auth(req: &mut Request, res: &mut Response, ctrl: &mut FlowCtrl) {
     };
 
     let cookie = match req.cookie("Token") {
-        Some(cookie) => cookie.value(),
+        Some(cookie) => {
+            if cookie.value().is_empty() {
+                refuse(res, ctrl);
+                return;
+            }
+            cookie.value().to_string()
+        }
         None => {
             refuse(res, ctrl);
             return;
         }
     };
 
-    if !CONFIG.read().await.verify_cookie(cookie).await {
+    if *COOKIE.read().await != cookie {
         refuse(res, ctrl);
         return;
     }
@@ -64,7 +70,7 @@ pub async fn login(res: &mut Response, req: &mut Request, ctrl: &mut FlowCtrl) {
             "error": "0"
         })));
 
-        CONFIG.write().await.update_cookie(&cookie).await;
+        *COOKIE.write().await = cookie;
     } else {
         res.status_code(StatusCode::UNAUTHORIZED);
         res.render(Json(json!({
@@ -76,7 +82,7 @@ pub async fn login(res: &mut Response, req: &mut Request, ctrl: &mut FlowCtrl) {
 /// Logout API
 #[handler]
 pub async fn logout(_req: &mut Request, res: &mut Response) {
-    CONFIG.write().await.remove_cookie().await;
+    *COOKIE.write().await = String::new();
 
     res.render(Json(json!({
         "error": "0"

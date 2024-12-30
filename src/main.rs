@@ -19,6 +19,7 @@ lazy_static::lazy_static! {
     );
     static ref ZEROTIER: RwLock<zerotier::ZeroTier> = RwLock::new(zerotier::ZeroTier::new());
     static ref CONFIG_PATH: String = Args::parse().config;
+    static ref COOKIE: RwLock<String> = RwLock::new(String::new());
 }
 
 #[derive(Parser)]
