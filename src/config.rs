@@ -1,6 +1,6 @@
+use bcrypt::{hash, verify};
+use serde::{Deserialize, Serialize};
 use std::path::Path;
-use serde::{ Serialize, Deserialize };
-use bcrypt::{ hash, verify };
 
 use crate::zerotier::ZeroTier;
 use crate::CONFIG_PATH;

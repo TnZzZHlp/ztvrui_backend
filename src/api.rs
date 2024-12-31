@@ -1,25 +1,24 @@
 use core::time;
 
-use salvo::{ http::cookie::Cookie, prelude::* };
-use serde_json::json;
 use base64::prelude::*;
-use std::time::{ SystemTime, UNIX_EPOCH };
+use salvo::{http::cookie::Cookie, prelude::*};
+use serde_json::json;
+use std::{
+    collections::HashMap,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
-use crate::{ CONFIG, COOKIE };
+use crate::{CONFIG, COOKIE};
 
 /// Verify Cookie legitimacy
 #[handler]
 pub async fn auth(req: &mut Request, res: &mut Response, ctrl: &mut FlowCtrl) {
     let refuse = |res: &mut Response, ctrl: &mut FlowCtrl| {
         res.status_code(StatusCode::UNAUTHORIZED);
-        res.render(
-            Json(
-                json!({
-                "path": "/",
-                "error": "No cookie found"
-            })
-            )
-        );
+        res.render(Json(json!({
+            "path": "/",
+            "error": "No cookie found"
+        })));
         ctrl.skip_rest();
     };
 
@@ -43,8 +42,9 @@ pub async fn login(res: &mut Response, req: &mut Request, ctrl: &mut FlowCtrl) {
     let body = req.parse_json::<serde_json::Value>().await.unwrap();
 
     let (username, password) = match (body.get("username"), body.get("password")) {
-        (Some(username), Some(password)) =>
-            (username.as_str().unwrap(), password.as_str().unwrap()),
+        (Some(username), Some(password)) => {
+            (username.as_str().unwrap(), password.as_str().unwrap())
+        }
         _ => {
             res.status_code(StatusCode::BAD_REQUEST);
             res.render(Json(json!({
@@ -60,15 +60,24 @@ pub async fn login(res: &mut Response, req: &mut Request, ctrl: &mut FlowCtrl) {
             format!(
                 "{}:{}",
                 uuid::Uuid::new_v4(),
-                SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis()
-            ).as_bytes()
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis()
+            )
+            .as_bytes(),
         );
 
         res.add_header(
             "Set-Cookie",
-            Cookie::build(("Token", &cookie)).path("/").permanent().build().to_string(),
-            true
-        ).unwrap();
+            Cookie::build(("Token", &cookie))
+                .path("/")
+                .permanent()
+                .build()
+                .to_string(),
+            true,
+        )
+        .unwrap();
 
         res.render(Json(json!({
             "error": "0"
@@ -99,8 +108,9 @@ pub async fn modify(res: &mut Response, req: &mut Request) {
     let body = req.parse_json::<serde_json::Value>().await.unwrap();
 
     let (username, password) = match (body.get("username"), body.get("password")) {
-        (Some(username), Some(password)) =>
-            (username.as_str().unwrap(), password.as_str().unwrap()),
+        (Some(username), Some(password)) => {
+            (username.as_str().unwrap(), password.as_str().unwrap())
+        }
         _ => {
             res.status_code(StatusCode::BAD_REQUEST);
             res.render(Json(json!({
@@ -111,12 +121,16 @@ pub async fn modify(res: &mut Response, req: &mut Request) {
     };
 
     {
-        CONFIG.write().await.update_user_info(username, password).await;
+        CONFIG
+            .write()
+            .await
+            .update_user_info(username, password)
+            .await;
     }
 
     res.render(Json(json!({
-            "error": "0"
-        })));
+        "error": "0"
+    })));
 }
 
 /// Check Login Status
