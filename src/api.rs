@@ -1,24 +1,21 @@
-use core::time;
-
 use base64::prelude::*;
-use salvo::{http::cookie::Cookie, prelude::*};
+use salvo::{ http::cookie::Cookie, prelude::* };
 use serde_json::json;
-use std::{
-    collections::HashMap,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::time::{ SystemTime, UNIX_EPOCH };
 
-use crate::{CONFIG, COOKIE};
+use crate::{ CONFIG, COOKIE };
 
 /// Verify Cookie legitimacy
 #[handler]
 pub async fn auth(req: &mut Request, res: &mut Response, ctrl: &mut FlowCtrl) {
     let refuse = |res: &mut Response, ctrl: &mut FlowCtrl| {
         res.status_code(StatusCode::UNAUTHORIZED);
-        res.render(Json(json!({
+        res.render(
+            Json(json!({
             "path": "/",
             "error": "No cookie found"
-        })));
+        }))
+        );
         ctrl.skip_rest();
     };
 
@@ -60,24 +57,15 @@ pub async fn login(res: &mut Response, req: &mut Request, ctrl: &mut FlowCtrl) {
             format!(
                 "{}:{}",
                 uuid::Uuid::new_v4(),
-                SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis()
-            )
-            .as_bytes(),
+                SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis()
+            ).as_bytes()
         );
 
         res.add_header(
             "Set-Cookie",
-            Cookie::build(("Token", &cookie))
-                .path("/")
-                .permanent()
-                .build()
-                .to_string(),
-            true,
-        )
-        .unwrap();
+            Cookie::build(("Token", &cookie)).path("/").permanent().build().to_string(),
+            true
+        ).unwrap();
 
         res.render(Json(json!({
             "error": "0"
@@ -121,11 +109,7 @@ pub async fn modify(res: &mut Response, req: &mut Request) {
     };
 
     {
-        CONFIG
-            .write()
-            .await
-            .update_user_info(username, password)
-            .await;
+        CONFIG.write().await.update_user_info(username, password).await;
     }
 
     res.render(Json(json!({
