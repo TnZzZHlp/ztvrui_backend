@@ -1,7 +1,0 @@
-{
-  "database_url": "sqlite://db.sqlite3",
-  "zerotier": {
-    "auth_token": "1234567890abcdef",
-    "address": "http://127.0.0.1:9993"
-  }
-}
