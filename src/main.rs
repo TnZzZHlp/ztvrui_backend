@@ -55,11 +55,11 @@ async fn main() {
                 .push(Router::with_path("editprofile").hoop(auth).post(modify)),
         )
         .push(
-            Router::with_path("ztapi/<**>")
+            Router::with_path("ztapi/{**}")
                 .hoop(auth)
                 .goal(forward_to_zt),
         )
-        .push(Router::with_path("<**>").get(index));
+        .push(Router::with_path("{**}").get(index));
     let service = Service::new(router).hoop(Logger::new());
     let acceptor = TcpListener::new(listen).bind().await;
     Server::new(acceptor).serve(service).await;
