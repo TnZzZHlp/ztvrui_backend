@@ -11,7 +11,9 @@ use api::*;
 use clap::Parser;
 use salvo::logging::Logger;
 use salvo::prelude::*;
+use std::collections::HashMap;
 use tokio::sync::RwLock;
+use tokio::time::Instant;
 
 lazy_static::lazy_static! {
     static ref CONFIG: RwLock<config::AppConfig> = RwLock::new(
@@ -19,7 +21,7 @@ lazy_static::lazy_static! {
     );
     static ref ZEROTIER: RwLock<zerotier::ZeroTier> = RwLock::new(zerotier::ZeroTier::new());
     static ref CONFIG_PATH: String = Args::parse().config;
-    static ref COOKIE: RwLock<String> = RwLock::new(String::new());
+    static ref COOKIE: RwLock<HashMap<String, Instant>> = RwLock::new(HashMap::new());
 }
 
 #[derive(Parser)]
