@@ -1,12 +1,7 @@
-use core::time;
-
 use base64::prelude::*;
 use salvo::{http::cookie::Cookie, prelude::*};
-use serde_json::json;
-use std::{
-    collections::HashMap,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tokio::time::Instant;
 
 use crate::{CONFIG, COOKIE};
 
@@ -15,10 +10,6 @@ use crate::{CONFIG, COOKIE};
 pub async fn auth(req: &mut Request, res: &mut Response, ctrl: &mut FlowCtrl) {
     let refuse = |res: &mut Response, ctrl: &mut FlowCtrl| {
         res.status_code(StatusCode::UNAUTHORIZED);
-        res.render(Json(json!({
-            "path": "/",
-            "error": "No cookie found"
-        })));
         ctrl.skip_rest();
     };
 
@@ -30,7 +21,21 @@ pub async fn auth(req: &mut Request, res: &mut Response, ctrl: &mut FlowCtrl) {
         }
     };
 
-    if *COOKIE.read().await != cookie {
+    let mut cookie_map = COOKIE.write().await;
+
+    if let Some(timestamp) = cookie_map.get_mut(cookie) {
+        if timestamp.elapsed() < Duration::from_secs(3600 * 24 * 7) {
+            // Cookie is valid
+            // Update the timestamp to extend the validity period
+            *timestamp = Instant::now();
+        } else {
+            // Cookie has expired
+            cookie_map.remove(cookie);
+            refuse(res, ctrl);
+            return;
+        }
+    } else {
+        // Cookie not found
         refuse(res, ctrl);
         return;
     }
@@ -47,9 +52,6 @@ pub async fn login(res: &mut Response, req: &mut Request, ctrl: &mut FlowCtrl) {
         }
         _ => {
             res.status_code(StatusCode::BAD_REQUEST);
-            res.render(Json(json!({
-                "error": "Invalid request"
-            })));
             ctrl.skip_rest();
             return;
         }
@@ -78,28 +80,33 @@ pub async fn login(res: &mut Response, req: &mut Request, ctrl: &mut FlowCtrl) {
             true,
         )
         .unwrap();
+        res.add_header(
+            "Set-Cookie",
+            Cookie::build(("Token", &cookie))
+                .path("/")
+                .permanent()
+                .build()
+                .to_string(),
+            true,
+        );
 
-        res.render(Json(json!({
-            "error": "0"
-        })));
+        res.status_code(StatusCode::NO_CONTENT);
 
-        *COOKIE.write().await = cookie;
+        COOKIE.write().await.insert(cookie, Instant::now());
     } else {
         res.status_code(StatusCode::UNAUTHORIZED);
-        res.render(Json(json!({
-            "error": "invalid_username_or_password"
-        })));
     }
 }
 
 /// Logout API
 #[handler]
 pub async fn logout(_req: &mut Request, res: &mut Response) {
-    *COOKIE.write().await = String::new();
+    if let Some(cookie) = _req.cookie("Token") {
+        let mut cookie_map = COOKIE.write().await;
+        cookie_map.remove(&cookie.to_string());
+    }
 
-    res.render(Json(json!({
-        "error": "0"
-    })));
+    res.status_code(StatusCode::NO_CONTENT);
 }
 
 /// Modify Username Or Password API
@@ -113,9 +120,6 @@ pub async fn modify(res: &mut Response, req: &mut Request) {
         }
         _ => {
             res.status_code(StatusCode::BAD_REQUEST);
-            res.render(Json(json!({
-                "error": "Invalid request"
-            })));
             return;
         }
     };
@@ -128,15 +132,11 @@ pub async fn modify(res: &mut Response, req: &mut Request) {
             .await;
     }
 
-    res.render(Json(json!({
-        "error": "0"
-    })));
+    res.status_code(StatusCode::NO_CONTENT);
 }
 
 /// Check Login Status
 #[handler]
 pub async fn check(res: &mut Response, _req: &mut Request) {
-    res.render(Json(json!({
-        "error": "0"
-    })));
+    res.status_code(StatusCode::NO_CONTENT);
 }

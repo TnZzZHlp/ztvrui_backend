@@ -21,7 +21,10 @@ pub async fn index(req: &mut Request, res: &mut Response) {
                 res.write_body(contents.to_vec()).unwrap();
             }
             None => {
-                res.render(Redirect::temporary("/"));
+                res.add_header("Content-Type", "text/html", true).unwrap();
+                res.write_body(
+                    FRONTEND.get_file("index.html").unwrap().contents().to_vec()
+                ).unwrap();
             }
         }
     }
