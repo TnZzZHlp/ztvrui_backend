@@ -80,15 +80,6 @@ pub async fn login(res: &mut Response, req: &mut Request, ctrl: &mut FlowCtrl) {
             true,
         )
         .unwrap();
-        res.add_header(
-            "Set-Cookie",
-            Cookie::build(("Token", &cookie))
-                .path("/")
-                .permanent()
-                .build()
-                .to_string(),
-            true,
-        );
 
         res.status_code(StatusCode::NO_CONTENT);
 
